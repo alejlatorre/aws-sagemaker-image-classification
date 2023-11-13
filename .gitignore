@@ -3,3 +3,8 @@ data/*.zip
 data/dogImages/*
 .ipynb_checkpoints/
 .venv
+.env
+logs/
+models/debug-output/
+models/rule-output/
+__pycache__/

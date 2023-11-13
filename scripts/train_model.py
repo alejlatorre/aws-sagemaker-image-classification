@@ -30,7 +30,10 @@ def test(model, test_loader, criterion, device, epoch_no, hook):
     '''
     logger.info(f"Epoch: {epoch_no} - Testing Model on Complete Testing Dataset!")
     model.eval()
-    hook.set_mode(smd.modes.EVAL) # Setting the  debugger hook mode to EVAL
+    
+    if hook:
+        hook.set_mode(smd.modes.EVAL) # Setting the  debugger hook mode to EVAL
+
     running_loss = 0
     running_corrects = 0
     with torch.no_grad(): # We do not want to caluculate gradients while testing
@@ -183,13 +186,13 @@ if __name__=='__main__':
     '''
     TODO: Specify any training args that you might need
     '''
-    parser.add_argument( "--batch_size", type = int, default = 64, metavar = "N", help = "input batch size for training (default: 64)" )
+    parser.add_argument( "--batch-size", type = int, default = 64, metavar = "N", help = "input batch size for training (default: 64)" )
     parser.add_argument( "--epochs", type=int, default=2, metavar="N", help="number of epochs to train (default: 2)"    )
     parser.add_argument( "--lr", type = float, default = 0.1, metavar = "LR", help = "learning rate (default: 1.0)" )
     parser.add_argument( "--eps", type=float, default=1e-8, metavar="EPS", help="eps (default: 1e-8)" )
     parser.add_argument( "--weight_decay", type=float, default=1e-2, metavar="WEIGHT-DECAY", help="weight decay coefficient (default 1e-2)" )
                         
-    parser.add_argument('--data_dir', type=str, default=os.environ['SM_CHANNEL_TRAIN'])
+    parser.add_argument('--data_dir', type=str, default=os.environ['SM_CHANNEL_TRAINING'])
     parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR'])
     args=parser.parse_args()
     

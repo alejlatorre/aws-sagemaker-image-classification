@@ -36,25 +36,24 @@ def test(model, test_loader, criterion, device):
     print(f"Testing Loss: {total_loss}")
     print(f"Testing Accuracy: {total_acc}")
 
-def train(model, train_loader, validation_loader, criterion, optimizer, device):
-    epochs=5
+def train(model, train_loader, validation_loader, criterion, optimizer, device, epochs=5):
     best_loss=float(1e6)
     image_dataset={'train':train_loader, 'valid':validation_loader}
     loss_counter=0
     
     for epoch in range(epochs):
         for phase in ['train', 'valid']:
+            running_loss = 0.0
+            running_corrects = 0.0
+            running_samples=0
+
             print(f"Epoch: {epoch}, Phase: {phase}")
             if phase=='train':
                 model.train()
             else:
                 model.eval()
-            running_loss = 0.0
-            running_corrects = 0.0
-            running_samples=0
             
             total_samples_in_phase = len(image_dataset[phase].dataset)
-
             for inputs, labels in image_dataset[phase]:
                 inputs=inputs.to(device)
                 labels=labels.to(device)                  
@@ -194,6 +193,13 @@ if __name__=='__main__':
     '''
     # Training settings
     parser = argparse.ArgumentParser(description="Udacity AWS ML project 3 - HPO tuning")
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=5,
+        metavar="N",
+        help="number of epochs to train (default: 5)",
+    )
     parser.add_argument(
         "--batch-size",
         type=int,
