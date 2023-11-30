@@ -130,20 +130,17 @@ profiler_config = ProfilerConfig(
 
 The following is screenshot of tracking the `cross_entropy_loss_output` during training and evaluation steps.
 
-!['cross_entropy_plot'](screenshots/cross_entropy_plot.png)
+!['cross_entropy_plot'](assets/cross_entropy_loss_debugging_output.png)
 
-**Insights from the Plot**
-
+**Insights**
 - The training loss decreases with the number of steps.
-- The training loss is a bit noisy, may be this means that the training might have required a larger batch size.
-- The validation loss seems to be almost constant and it is very low compared to the training loss from the beginning which might be a sign of overfitting.
+- From the fifth step onwards the cross entropy loss is noisy but keeps an average value of 4.8.
+- The validation loss decreases up to the 27th step, then rises and keep constant. Before that is very low compared to the training loss (could be overfitting and then underfitting).
 
-**What to be applied if the plot was erronous**
-Inorder to avoid overfitting we might try the following solutions:
-
-- Maybe I need to use a smaller model compared to the `resnet50` like the `resnet18` for example.
-- Maybe I need to apply regularization to avoid overfitting over the dataset.
-- Maybe I need more data for my model.
+**Possible solutions**
+- Test with a simpler model.
+- Test with any regularization method to avoid overfitting.
+- Test with more data.
 
 ## Model Deployment
 
@@ -157,79 +154,173 @@ Inorder to avoid overfitting we might try the following solutions:
 
 ### Screenshot of the deployed endpoint in service
 
-!['Deployment'](screenshots/Deployment.png)
+!['Deployment'](assets/deployed_endpoint.png)
 
 The model is deployed on one instance of `ml.t2.medium`
 
 ### Instructions to Query the model
 
-- Provide the path of a local image to the Image.open() function from the PIL library to load the image as a PIL image.
+- Make a get request to a provide the path of an image stored in S3 and load the content (must be in bytes format).
 
 ```python
-cwd = os.getcwd()
-path = os.path.join(cwd, "test/001.Affenpinscher/Affenpinscher_00058.jpg")
-pil_img = Image.open(path)
+request_dict = {
+    "url": "https://sagemaker-us-east-1-062734945147.s3.amazonaws.com/image-classification/test/133.Yorkshire_terrier/Yorkshire_terrier_08325.jpg"
+}
+img_bytes = requests.get(request_dict["url"]).content
+type(img_bytes)
 ```
 
-- Preprocess the image to prepare the tensor input for the `resnet50` network.
-  First the image is resized to (3x256x256) then a center crop is applied to make the image size (3x224x224), the image is then converted to a tensor with values from 0.0 to 1.0 and finally it is normalized by some common known values fro the mean and the standard deviation.
+- You can check if the image is shown using the Image.open() method from PIL package.
+```python
+Image.open(io.BytesIO(img_bytes))
+```
+!['Dog example'](assets/dog_example.png)
+
+- Make a request (predict) to the endpoint passing the mage as a payload
 
 ```python
-# transforms
-preprocess = T.Compose([
-   T.Resize(256),
-   T.CenterCrop(224),
-   T.ToTensor(),
-   T.Normalize(
-       mean=[0.485, 0.456, 0.406],
-       std=[0.229, 0.224, 0.225]
-   )
-])
-
-image = preprocess(pil_img).unsqueeze(0)
+response = predictor.predict(img_bytes, initial_args={"ContentType": "image/jpeg"})
 ```
 
-- A request is then sent to the endpoint having the image as its payload
+- Then you will see the response
 
 ```python
-response = predictor.predict(image)
+[[-11.818755149841309,
+  -23.93946647644043,
+  -16.528059005737305,
+  -17.10870361328125,
+  -17.838972091674805,
+  -21.144777297973633,
+  -12.256084442138672,
+  -16.974124908447266,
+  -14.588923454284668,
+  -18.741077423095703,
+  -21.963314056396484,
+  -22.19807243347168,
+  -18.557689666748047,
+  -9.5072660446167,
+  -22.067834854125977,
+  -16.86520004272461,
+  -18.757532119750977,
+  -11.70285701751709,
+  -17.927722930908203,
+  -17.17595863342285,
+  -22.322900772094727,
+  -24.422077178955078,
+  -19.69737434387207,
+  -12.824094772338867,
+  -14.398181915283203,
+  -10.205384254455566,
+  -7.880538463592529,
+  -12.293628692626953,
+  -17.719879150390625,
+  -15.904070854187012,
+  -18.349924087524414,
+  -10.528854370117188,
+  -17.26404571533203,
+  -15.101017951965332,
+  -14.70076847076416,
+  -12.883363723754883,
+  -7.303520679473877,
+  -17.987077713012695,
+  -5.990157127380371,
+  -3.716557264328003,
+  -5.287804126739502,
+  -14.302899360656738,
+  -9.119582176208496,
+  -20.344364166259766,
+  -13.505431175231934,
+  -16.683366775512695,
+  -22.58536720275879,
+  -25.481761932373047,
+  -8.310916900634766,
+  -15.809903144836426,
+  -22.46126365661621,
+  -14.986784934997559,
+  -21.596031188964844,
+  -5.77096700668335,
+  -23.422948837280273,
+  -10.051714897155762,
+  -19.196857452392578,
+  -22.43994903564453,
+  -25.4459171295166,
+  -3.8471505641937256,
+  -13.070581436157227,
+  -15.416263580322266,
+  -25.66337776184082,
+  -19.18313217163086,
+  -19.888057708740234,
+  -19.122154235839844,
+  -22.593299865722656,
+  -4.7969183921813965,
+  -15.857717514038086,
+  -12.778410911560059,
+  -17.373563766479492,
+  -13.9769926071167,
+  -16.307979583740234,
+  -14.892586708068848,
+  -16.55836296081543,
+  -10.468522071838379,
+  -11.41689682006836,
+  -17.159486770629883,
+  -7.317279815673828,
+  -18.756181716918945,
+  -5.536855220794678,
+  -26.28867530822754,
+  -10.710018157958984,
+  -14.683958053588867,
+  -15.480021476745605,
+  -14.901814460754395,
+  -15.529022216796875,
+  -21.189800262451172,
+  -16.610925674438477,
+  -13.638585090637207,
+  -17.01585578918457,
+  -23.973222732543945,
+  -12.643630981445312,
+  -8.097764015197754,
+  -17.238739013671875,
+  -16.275365829467773,
+  -20.43971824645996,
+  -22.437929153442383,
+  -24.319868087768555,
+  -8.400869369506836,
+  -16.269132614135742,
+  -25.77283477783203,
+  -19.472118377685547,
+  -15.619222640991211,
+  -22.82831382751465,
+  -14.216837882995605,
+  -17.45458984375,
+  -26.243345260620117,
+  -17.216360092163086,
+  -16.922801971435547,
+  -14.893828392028809,
+  -21.899259567260742,
+  -19.51923370361328,
+  -24.715600967407227,
+  -10.088350296020508,
+  -14.995453834533691,
+  -14.019255638122559,
+  -19.230527877807617,
+  -18.839284896850586,
+  -20.400880813598633,
+  -17.8051700592041,
+  -25.72586441040039,
+  -17.951580047607422,
+  -17.536792755126953,
+  -14.445538520812988,
+  -20.277414321899414,
+  -21.240215301513672,
+  -21.9508113861084,
+  -14.211623191833496,
+  -21.663000106811523,
+  -16.393089294433594,
+  -7.168015480041504,
+  -29.894847869873047]]
 ```
 
-### Example
-
-- Input image
-
-!['Affenpinscher_00058'](screenshots/Affenpinscher_00058.jpg)
-
-- Response
-
+- Delete the endpoint to avoid expensive costs
 ```python
-[[  8.75180435  -2.39673591  -4.73243904  -2.58364224  -3.12655997
-   -4.69459724  -4.91700315   0.20925087  -1.28252411  -4.69724178
-   -6.19639254  -4.61702633  -0.1959562   -5.22766113  -3.70985484
-   -9.32637787   2.92932057  -2.87671828  -3.61445904  -4.80398226
-   -3.69890761  -1.79214704  -0.03427362   0.52362651  -8.08525944
-   -1.78680778  -2.94204307  -8.00784397  -7.86408997  -1.37789559
-   -4.95504999  -4.61141729   1.48781848  -2.66207027   2.31265283
-    0.08962552  -3.34239817   5.9371953   -6.64492083   1.15104353
-   -1.14075339   4.10580587  -6.80430794   0.08709467  -2.77319932
-    3.14990973  -6.03189707  -0.14118356   1.70128691  -3.20288825
-   -5.14803886  -2.98602223  -3.02217889  -6.83412361  -3.2475698
-    2.61658454  -3.3683207    2.47357655  -1.34678447  -1.37212551
-   -1.15570867   0.43383688  -1.11844242   4.96402836  -1.63055515
-   -4.80711269  -2.69961619  -0.67701799  -1.18653047  -5.40414715
-   -6.21986818  -4.2561245    0.26153508  -0.31608373   0.41145071
-   -3.94431829  -3.35607791 -10.5872364   -9.96873474  -5.03268433
-   -2.10532379   4.98820686  -9.55483055  -1.65680575  -3.78380179
-   -7.08229542  -5.01223516  -6.44231224  -5.69851542  -3.70648956
-   -2.35652184  -3.58251119   1.44485867  -4.43101549  -5.19097948
-   -2.10602784  -4.42232943  -7.38172102   9.38558769   3.84224892
-    0.13998455  -5.74204159  -2.13060141  -1.7858336   -1.67286777
-   -1.8520869    0.70228446  -6.82978106  -4.99912643  -6.64194918
-   -3.5172174   -1.70486581  -4.75633717  -2.71399093  -1.42897201
-   -2.05804634   2.1108644   -7.05989408   1.67206383  -7.14816761
-   -7.10544109  -2.48531008  -1.50545609  -6.91559172   3.5340507
-   -7.34921312  -0.98429281  -6.50257587  -2.30569077  -3.86719155
-    6.00153255  -2.73402333   0.19892243]]
-length of response : 133
+predictor.delete_endpoint()
 ```
